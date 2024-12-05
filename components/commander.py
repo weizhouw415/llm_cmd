@@ -30,24 +30,30 @@ class CommandExecutor:
         # result = qwen_invoke(msg, system=PROMPT_GENERATE_CMD)
         result = qianfan_invoke(msg, system=PROMPT_GENERATE_CMD)
         loginfo(f"generate cmd: {result}")
-        result = result.strip("`").strip("```").strip()
+        result = result.replace("`", "").replace("```", "").strip()
         loginfo(f"stripped cmd: {result}")
         return result
 
     def execute_cmd(self, cmd: str) -> tuple[int, str]:
         try:
             if cmd.startswith("powershell"):
-                cmd = cmd.replace("powershell", "").strip()
+                cmd = cmd.replace("powershell -command", "").replace("powershell", "").strip()
                 loginfo(f"Stripped powershell cmd: {cmd}")
                 process = subprocess.Popen(["powershell", "-Command", cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             else:
                 process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             
             stdout, stderr = process.communicate()
-            if stdout == 0:
-                return process.returncode, stdout.decode()
+            code = int(process.returncode)
+            result = stdout.decode(errors='ignore') if stdout else ""
+            error = stderr.decode(errors='ignore') if stderr else ""
+            loginfo(f"code: {code}")
+            if code == 0:
+                loginfo(f"执行结果: {result}")
+                return process.returncode, result
             else:
-                return process.returncode, stderr.decode()
+                logerror(f"执行错误: {error}")
+                return process.returncode, error
         except Exception as e:
             logerror(f"execute_cmd error: {e}")
             return -1, str(e)
@@ -79,6 +85,7 @@ if __name__ == "__main__":
     # msg = "请帮我创建一个2.txt的文件在当前文件夹"
     # msg = "查看当前文件夹下的所有文件"
     # msg = "查看我的内存使用情况"
+    msg = "查看当前文件夹下文件"
     msg = "查看我的cpu使用率"
     print(f"用户输入：{msg}")
 
