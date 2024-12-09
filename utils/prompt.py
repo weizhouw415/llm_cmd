@@ -61,3 +61,10 @@ PROMPT_SUMMARY_EXECUTION = """你是一个windows系统管理员，你擅长使�
 状态码：{code}
 执行结果：{result}
 请输出："""
+
+PROMPT_SUMMARY_TOOLS = """你是一个windows系统管理员，你擅长使用windows工具。
+用户提出了一个和windows电脑有关的问题或指令，且你已经调用工具解决了该问题。请根据工具返回的结果给出用户相应的反馈。
+
+用户问题：{question}
+工具返回结果：{result}
+请回答："""
