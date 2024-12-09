@@ -1,9 +1,11 @@
 from ctypes import POINTER, cast
 from comtypes import CLSCTX_ALL
+import comtypes
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 
 def set_volume(volume_percent: int) -> bool:
     try:
+        comtypes.CoInitialize()
         devices = AudioUtilities.GetSpeakers()
         interface = devices.Activate(
             IAudioEndpointVolume._iid_, CLSCTX_ALL, None)

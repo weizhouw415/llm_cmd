@@ -6,15 +6,13 @@ from utils.prompt import (
     PROMPT_GENERATE_CMD, 
     PROMPT_SUMMARY_EXECUTION
 )
-from components.tools import FUNCTIONS
 
 class CommandExecutor:
     def generate_cmd(self, msg: str) -> str:
         # result = qwen_invoke(msg, system=PROMPT_GENERATE_CMD)
         result = qianfan_invoke(
             msg, 
-            system=PROMPT_GENERATE_CMD, 
-            tools=FUNCTIONS
+            system=PROMPT_GENERATE_CMD
         )
         loginfo(f"generate cmd: {result}")
         if isinstance(result, str):
@@ -29,6 +27,9 @@ class CommandExecutor:
                 loginfo(f"Stripped powershell cmd: {cmd}")
                 process = subprocess.Popen(["powershell", "-Command", cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             else:
+                if cmd.startswith("systeminfo"):
+                    cmd = cmd.split("|")[0].strip()
+                    loginfo(f"Stripped cmd: {cmd}")
                 process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             
             stdout, stderr = process.communicate()
@@ -59,20 +60,3 @@ class CommandExecutor:
         except Exception as e:
             logerror(f"summary_exe error: {e}")
             return e
-        
-
-if __name__ == "__main__":
-    executer = CommandExecutor()
-    
-    # msg = "查看内存使用情况"
-    # msg = "请帮我创建一个2.txt的文件在当前文件夹"
-    # msg = "查看当前文件夹下的所有文件"
-    # msg = "查看我的内存使用情况"
-    msg = "查看当前文件夹下文件"
-    msg = "查看我的cpu使用率"
-    print(f"用户输入：{msg}")
-
-    reply = executer.process_message(msg)
-    print("输出结果：")
-    print(reply)
-    print("\n")

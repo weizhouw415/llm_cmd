@@ -1,12 +1,17 @@
 import psutil
+import platform
+
 
 def get_cpu_usage():
-    """
-    获取CPU使用情况
-    :return: 当前CPU使用率的百分比
-    """
-    cpu_usage = psutil.cpu_percent(interval=1)
-    return cpu_usage
+    cpu_info = {
+        "cpu_stats": psutil.cpu_stats()._asdict(),
+        "cpu_times": psutil.cpu_times()._asdict(),
+        "cpu_count_logical": psutil.cpu_count(logical=True),
+        "cpu_count_physical": psutil.cpu_count(logical=False),
+        "cpu_percent": psutil.cpu_percent(interval=1),
+        "cpu_name": platform.processor()
+    }
+    return cpu_info
 
 def get_memory_usage():
     """
@@ -18,7 +23,7 @@ def get_memory_usage():
     used_memory = memory_info.used / (1024 ** 3)    # 转换为GB
     available_memory = memory_info.available / (1024 ** 3)  # 转换为GB
     return {
-        "total_memory": total_memory,
-        "used_memory": used_memory,
-        "available_memory": available_memory
+        "total_memory": f"{total_memory} GB",
+        "used_memory": f"{used_memory} GB",
+        "available_memory": f"{available_memory} GB"
     }
