@@ -1,4 +1,4 @@
-import qianfan, json, requests
+import qianfan, json, requests, os
 from openai import OpenAI
 
 log_info = print
@@ -12,6 +12,27 @@ def ai_msg(msg: str) -> dict:
 
 def sys_msg(msg: str) -> dict:
     return {"role": "system", "content": msg}
+
+
+def openai_invoke(msg: str, system: str = "", functions: list[dict] = None) -> str:
+    client = OpenAI(
+        api_key=os.getenv("OPENAI_SK"),
+        base_url=os.getenv("OPENAI_BASE_URL")
+    )
+
+    messages = []
+    if system:
+        messages.append(sys_msg(system))
+    messages.append(usr_msg(msg))
+
+    completion = client.chat.completions.create(
+        model="gpt-4o",
+        messages=messages,
+        functions=functions,
+    )
+    answer = completion.choices[0].dict()
+    # return answer.get("message", {}).get("content", "")
+    return answer
 
 
 def qwen_vllm_invoke(msg: str, system: str = "") -> str:
@@ -51,50 +72,35 @@ def openai_ollama_generate(msg: str, model: str = "qwen2.5:latest", system: str 
     return answer.get("message", {}).get("content", "")
 
 
-def qianfan_invoke(msg: str, system: str = "") -> str:
+def qianfan_invoke(msg: str, system: str = None, tools: dict = None) -> str | dict:
     chat_comp = qianfan.ChatCompletion(model="ERNIE-4.0-Turbo-8K")
-    if system:
-        resp = chat_comp.do(
-            messages=[usr_msg(msg)], 
-            top_p=0.9, 
-            temperature=0.01, 
-            penalty_score=1.0,
-            disable_search=True,
-            system=system
-        )
+    resp = chat_comp.do(
+        messages=[usr_msg(msg)], 
+        top_p=0.9, 
+        temperature=0.01, 
+        penalty_score=1.0,
+        disable_search=True,
+        functions=tools,
+        system=system
+    )
+    if resp.get("function_call"):
+        return resp.get("function_call")
     else:
-        resp = chat_comp.do(
-            messages=[usr_msg(msg)], 
-            top_p=0.9, 
-            temperature=0.01, 
-            penalty_score=1.0,
-            disable_search=True
-        )
-    return resp.get("result", "")
+        return resp.get("result", "")
 
 
-def qianfan_stream(msg_list: list[dict], functions: list[dict] = [], system_msg: str = "", ):
+def qianfan_stream(msg_list: list[dict], functions: list[dict] = [], system_msg: str = None, ):
     try:
         chat_comp = qianfan.ChatCompletion(model="ERNIE-4.0-8K")
-        if system_msg:
-            resp = chat_comp.do(
-                messages=msg_list, 
-                top_p=0.9, 
-                temperature=0.01, 
-                penalty_score=1.0,
-                stream=True,
-                functions=functions,
-                system=system_msg
-            )
-        else:
-            resp = chat_comp.do(
-                messages=msg_list, 
-                top_p=0.9, 
-                temperature=0.01, 
-                penalty_score=1.0,
-                stream=True,
-                functions=functions
-            )
+        resp = chat_comp.do(
+            messages=msg_list, 
+            top_p=0.9, 
+            temperature=0.01, 
+            penalty_score=1.0,
+            stream=True,
+            functions=functions,
+            system=system_msg
+        )
         check_func_call = True
         for chunk in resp:
             result = chunk.get("result", "")
@@ -118,4 +124,3 @@ def qianfan_stream(msg_list: list[dict], functions: list[dict] = [], system_msg:
     except Exception as e:
         log_error("llm chat error: %s" % e)
         return ""
-    
